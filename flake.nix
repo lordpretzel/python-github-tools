@@ -39,8 +39,8 @@
             ###################################################################
             apps = {
               default = simple_script "clean_bib" [] ''
-                echo "Cleaning bib"
-                python clean_bib.py "''$@"
+                echo "args are: " "''$@"
+                python github-tools.py "''$@"
               '';
             };
 

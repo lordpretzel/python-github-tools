@@ -23,6 +23,7 @@ def readArgs(argv):
 def checkArgs(opts, cmd):
     copts = cmdoptions[cmd]
     if not (("r" in opts and "u" in opts and "p" in opts) or ("t" in opts) or ("c" in opts and "s" in opts)):
+        print(f"args: {copts} and {opts}")
         errorExit("need to provide repo, user, and passwd")
 
 def connect(opts):
@@ -131,7 +132,7 @@ def makePrivate(opts,g):
     user = get_user(opts)
     repo = opts['r']
     g.repos.update(owner=user, repo=repo, private=True)
-    
+
 def deleteRepo(opts,g):
     user = get_user(opts)
     repo = opts['r']
