@@ -32,15 +32,16 @@
             program = "${exec}/bin/${name}";
           };
 
+          pyscript = "${self}/github-tools.py";
+
         in with pkgs;
           {
             ###################################################################
             #                       running                                   #
             ###################################################################
             apps = {
-              default = simple_script "clean_bib" [] ''
-                echo "args are: " "''$@"
-                python github-tools.py "''$@"
+              default = simple_script "pyscript" [] ''
+                python ${pyscript} "''$@"
               '';
             };
 
