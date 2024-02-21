@@ -3,6 +3,36 @@ from ghapi.all import GhApi
 import getopt
 import sys
 import os
+import requests
+
+Q_SSO_USERS = """
+query {
+  organization(login: "$ORG") {
+    samlIdentityProvider {
+      ssoUrl
+      externalIdentities(first: 100) {
+        edges {
+          node {
+            guid
+            samlIdentity {
+              nameId
+              emails {
+                primary
+                type
+                value
+              }
+            }
+            user {
+              login
+            }
+          }
+        }
+      }
+    }
+  }
+}
+"""
+GRAPH_QL_URL = 'https://api.github.com/graphql'
 
 def errorExit(message="", e=None):
     print(help)
@@ -46,7 +76,7 @@ def repoExists(g,user, repo):
 
 def teamExists(g, user, team):
     try:
-        g.teams.get_by_name(user, team)
+        g.teams.get_by_name(org=user, team_slug=team)
         return True
     except Exception:
         return False
@@ -56,7 +86,9 @@ def getTeam(g, user, team):
 
 def userExists(g, user, organization):
     try:
-        user = g.orgs.check_membership_for_user(organization, user)
+        user = g.orgs.check_membership_for_user(
+            org=organization,
+            username=user)
         return user
     except Exception:
         return None
@@ -87,31 +119,36 @@ def reinviteFailed(opts,g):
 
 def inviteToTeam(opts,g):
     user = get_user(opts)
-    exists_user = None
+    #exists_user = None
     notcheck = True if 'N' in opts else False
     team = opts['T']
     invitee = opts['i']
     role = opts['P'] if 'P' in opts else 'member'
+    orgusers = listOrgMemberEmails(opts,g)
 
     if (not notcheck) and (not teamExists(g,user,team)):
-        errorExit("cannot add using since team {} does not exit".format(opts['T']))
+        errorExit("cannot add user since team {} does not exit in org {}"
+                  .format(team, user))
     if not notcheck:
-        exists_user = userExists(g, invitee, user)
-        print(f"Users exists in org {user}: {exists_user}")
-    gteam = getTeam(g,user,team)
+        #exists_user = userExists(g, invitee, user)
+        if invitee in orgusers:
+            print(f"Users exists in org {user}: {invitee} {orgusers[invitee]}")
     print(f"add role {role} in {team} to {invitee}")
+    gteam = getTeam(g,user,team)
     try:
-        g.orgs.create_invitation(org=user,
-                                 email=invitee,
-                                 role='direct_member',
-                                 team_ids=[gteam.id])
+        if invitee in orgusers:
+            g.teams.add_or_update_membership_for_user_in_org(
+                org=user,
+                team_slug=team,
+                username=orgusers[invitee],
+                role=role)
+        else:
+            g.orgs.create_invitation(org=user,
+                                     email=invitee,
+                                     role='direct_member',
+                                     team_ids=[gteam.id])
     except Exception as e:
         print(e)
-    # g.teams.add_or_update_membership_for_user_in_org(
-    #     org=user,
-    #     team_slug=team,
-    #     username=invitee,
-    #     role=role)
 
 def listMembers(opts,g):
     users = g.orgs.list_members(
@@ -122,6 +159,30 @@ def listMembers(opts,g):
         )
     names = [ x['login'] for x in users ]
     print('\n'.join(names))
+
+def executeGraphQL(opts,q):
+    json = { 'query' : q }
+    api_token = opts['t']
+    headers = {'Authorization': 'token %s' % api_token}
+    r = requests.post(url=GRAPH_QL_URL, json=json, headers=headers)
+    return r.json()
+
+def listOrgMemberEmails(opts,g):
+    users = {}
+    q = Q_SSO_USERS.replace("$ORG", opts['o'])
+    response = executeGraphQL(opts, q)
+    #print(response)
+    userslist = response['data']['organization']['samlIdentityProvider']['externalIdentities']['edges']
+
+    for node in userslist:
+        print(node)
+        if node['node']['user']:
+            name = node['node']['user']['login']
+            email = node['node']['samlIdentity']['emails'][0]['value']
+            users[email] = name
+
+    return users
+
 
 def changeMemberRole(opts,g):
     g.orgs.set_membership_for_user(org=opts['o'],
