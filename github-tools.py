@@ -123,7 +123,7 @@ def inviteToTeam(opts,g):
     notcheck = True if 'N' in opts else False
     team = opts['T']
     invitee = opts['i']
-    role = opts['P'] if 'P' in opts else 'direct_member'
+    role = opts['P'] if 'P' in opts else 'member'
     orgusers = listOrgMemberEmails(opts,g)
 
     if (not notcheck) and (not teamExists(g,user,team)):
@@ -137,11 +137,12 @@ def inviteToTeam(opts,g):
     gteam = getTeam(g,user,team)
     try:
         if invitee in orgusers:
+            uprole = 'maintainer' if role == 'admin' else "member"
             g.teams.add_or_update_membership_for_user_in_org(
                 org=user,
                 team_slug=team,
                 username=orgusers[invitee],
-                role=role)
+                role=uprole)
         else:
             g.orgs.create_invitation(org=user,
                                      email=invitee,
