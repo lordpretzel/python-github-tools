@@ -123,7 +123,7 @@ def inviteToTeam(opts,g):
     notcheck = True if 'N' in opts else False
     team = opts['T']
     invitee = opts['i']
-    role = opts['P'] if 'P' in opts else 'member'
+    role = opts['P'] if 'P' in opts else 'direct_member'
     orgusers = listOrgMemberEmails(opts,g)
 
     if (not notcheck) and (not teamExists(g,user,team)):
