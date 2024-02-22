@@ -175,7 +175,6 @@ def listOrgMemberEmails(opts,g):
     userslist = response['data']['organization']['samlIdentityProvider']['externalIdentities']['edges']
 
     for node in userslist:
-        print(node)
         if node['node']['user']:
             name = node['node']['user']['login']
             email = node['node']['samlIdentity']['emails'][0]['value']
