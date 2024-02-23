@@ -52,6 +52,9 @@
               {
                 # requirementx
                 requirements = builtins.readFile requirements-txt;
+                # shell-hook = ''
+                # echo "Python environment for developing github tools"
+                # '';
                 # python version
                 # nativeBuildInputs = with pkgs; [
                 #   python38
