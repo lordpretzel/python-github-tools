@@ -129,7 +129,7 @@ def inviteToTeam(opts,g):
     role = opts['P'] if 'P' in opts else 'member'
     orgusers = listOrgMemberEmails(opts,g)
 
-    log(f"\nInvite {invitee} with {role} to {team}")
+    log(f"Invite {invitee} with {role} to {team}")
     if (not notcheck) and (not teamExists(g,user,team)):
         errorExit("cannot add user since team {} does not exit in org {}"
                   .format(team, user))
