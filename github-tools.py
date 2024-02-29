@@ -56,6 +56,9 @@ def checkArgs(opts, cmd):
         print(f"args: {copts} and {opts}")
         errorExit("need to provide repo, user, and passwd")
 
+def log(mes):
+    print(80 * "*" + "\n" + mes + "\n" + 80 * "*")
+
 def connect(opts):
     token = opts['t'] if 't' in opts else os.environ.get('GITHUB_TOKEN')
     if "t" in opts:
@@ -126,7 +129,7 @@ def inviteToTeam(opts,g):
     role = opts['P'] if 'P' in opts else 'member'
     orgusers = listOrgMemberEmails(opts,g)
 
-    print(80 * "*" + f"\nInvite {invitee} with {role} to {team}")
+    log(f"\nInvite {invitee} with {role} to {team}")
     if (not notcheck) and (not teamExists(g,user,team)):
         errorExit("cannot add user since team {} does not exit in org {}"
                   .format(team, user))
