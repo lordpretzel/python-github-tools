@@ -17,14 +17,16 @@
 
           requirements-txt = "${self}/requirements.txt";
 
+          pyenv = (mach-nix.lib."${system}".mkPython {
+                  requirements = builtins.readFile requirements-txt;
+                });
+
           # Utility to run a script easily in the flakes app
           simple_script = name: add_deps: text: let
             exec = pkgs.writeShellApplication {
               inherit name text;
               runtimeInputs = with pkgs; [
-                (mach-nix.lib."${system}".mkPython {
-                  requirements = builtins.readFile requirements-txt;
-                })
+                pyenv
               ] ++ add_deps;
             };
           in {
@@ -48,13 +50,18 @@
             ###################################################################
             #                       development shell                         #
             ###################################################################
-            devShells.default = mach-nix.lib."${system}".mkPythonShell # mkShell
+            devShells.default = mkShell # mach-nix.lib."${system}".mkPythonShell # mkShell
               {
                 # requirementx
-                requirements = builtins.readFile requirements-txt;
-                # shell-hook = ''
-                # echo "Python environment for developing github tools"
-                # '';
+                buildInputs = [
+                    pyenv
+                ];
+
+                shell-hook = ''
+                 echo "********************************************************************************"
+                 echo "Python environment for developing github tools"
+                 echo "********************************************************************************"
+                '';
                 # python version
                 # nativeBuildInputs = with pkgs; [
                 #   python38
