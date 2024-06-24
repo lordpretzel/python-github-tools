@@ -2,10 +2,10 @@
   description = "tools for github API scripting";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11"; 
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
     flake-utils.url = "github:numtide/flake-utils";
     mach-nix.url = "github:DavHau/mach-nix";
-  };  
+  };
 
   outputs = { self, nixpkgs, flake-utils, mach-nix, ... }@inputs:
     flake-utils.lib.eachDefaultSystem
@@ -17,9 +17,9 @@
 
           requirements-txt = "${self}/requirements.txt";
           requirements-as-text = builtins.readFile requirements-txt;
-          
+
           # python environment
-          mypython = 
+          mypython =
             mach-nix.lib."${system}".mkPython {
               requirements = builtins.readFile requirements-txt;
             };
@@ -28,7 +28,7 @@
             mach-nix.lib."${system}".mkPython {
               requirements = requirements-as-text +  "\npip";
             };
-          
+
           # Utility to run a script easily in the flakes app
           simple_script = name: add_deps: text: let
             exec = pkgs.writeShellApplication {
@@ -47,7 +47,7 @@
           pyscript = "${self}/${script-name}";
           package-version = "1.0";
           package-name = "${script-base-name}-${package-version}";
-          
+
         in with pkgs;
           {
             ###################################################################
@@ -57,7 +57,7 @@
               github-tools = stdenv.mkDerivation {
                 name="${package-name}";
                 src = ./.;
-                
+
                 runtimeInputs = [ mypython ];
                 buildInputs = [ mypython ];
                 nativeBuildInputs = [ makeWrapper ];
@@ -65,11 +65,11 @@
                   mkdir -p $out/bin/
                   mkdir -p $out/share/
                   cp ${pyscript} $out/share/${script-name}
-                  makeWrapper ${mypython}/bin/python $out/bin/${script-base-name} --add-flags "$out/share/${script-name}" 
-                '';                
+                  makeWrapper ${mypython}/bin/python $out/bin/${script-base-name} --add-flags "$out/share/${script-name}"
+                '';
               };
             };
-            
+
             ###################################################################
             #                       running                                   #
             ###################################################################
@@ -85,19 +85,19 @@
             devShells.default = mkShell
               {
                 buildInputs = [
-                  pkgs.charasay
+                  pkgs.rich-cli
                   mydevpython
                 ];
                 runtimeInputs = [ mydevpython ];
                 shellHook = ''
                   alias pip="${mydevpython}/bin/pip --disable-pip-version-check"
-                  echo "Using virtual environment with Python
+                  rich "[b white on black]Using virtual environment for [/][b white on red] ${package-name} [/][b white on black] with Python[/]
 
-$(python --version)
+[b]$(python --version)[/]
 
-with packages
+[b white on black]with packages[/]
 
-$(${mydevpython}/bin/pip list --no-color --disable-pip-version-check)" | chara say -f null.chara
+$(${mydevpython}/bin/pip list --no-color --disable-pip-version-check)" --print --padding 1 -p -a heavy
                 '';
               };
           }
