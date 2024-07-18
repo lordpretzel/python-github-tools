@@ -2,7 +2,7 @@
   description = "tools for github API scripting";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     mach-nix.url = "github:DavHau/mach-nix";
   };
@@ -18,15 +18,24 @@
           requirements-txt = "${self}/requirements.txt";
           requirements-as-text = builtins.readFile requirements-txt;
 
+          python="python310";
+          
           # python environment
           mypython =
             mach-nix.lib."${system}".mkPython {
-              requirements = builtins.readFile requirements-txt;
+              inherit python;
+              requirements = requirements-as-text;
             };
 
           mydevpython =
             mach-nix.lib."${system}".mkPython {
-              requirements = requirements-as-text +  "\npip";
+              inherit python;
+              requirements = requirements-as-text +  ''
+pip
+python-lsp-server[all]
+rich-cli
+mypy
+'';
             };
 
           # Utility to run a script easily in the flakes app
@@ -85,7 +94,6 @@
             devShells.default = mkShell
               {
                 buildInputs = [
-                  pkgs.rich-cli
                   mydevpython
                 ];
                 runtimeInputs = [ mydevpython ];
