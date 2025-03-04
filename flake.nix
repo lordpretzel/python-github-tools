@@ -2,7 +2,7 @@
   description = "tools for github API scripting";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
     flake-utils.url = "github:numtide/flake-utils";
     mach-nix.url = "github:DavHau/mach-nix";
   };
@@ -18,8 +18,8 @@
           requirements-txt = "${self}/requirements.txt";
           requirements-as-text = builtins.readFile requirements-txt;
 
-          python="python310";
-          
+          python="python311";
+
           # python environment
           mypython =
             mach-nix.lib."${system}".mkPython {
@@ -33,7 +33,6 @@
               requirements = requirements-as-text +  ''
 pip
 python-lsp-server[all]
-rich-cli
 mypy
 '';
             };
@@ -95,8 +94,12 @@ mypy
               {
                 buildInputs = [
                   mydevpython
+                  rich-cli
                 ];
-                runtimeInputs = [ mydevpython ];
+                runtimeInputs = [
+                  mydevpython
+                  rich-cli
+                ];
                 shellHook = ''
                   alias pip="${mydevpython}/bin/pip --disable-pip-version-check"
                   rich "[b white on black]Using virtual environment for [/][b white on red] ${package-name} [/][b white on black] with Python[/]
