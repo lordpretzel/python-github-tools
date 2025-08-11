@@ -1,0 +1,16 @@
+[project]
+name = "github-tools"
+description = "Tools for github API scripting"
+version = "1.0"
+
+dependencies = [
+          'ghapi',
+          'requests',
+]
+
+[project.scripts]
+github-tools = "github_tools.github_tools:main"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"

@@ -1,10 +1,9 @@
 {
-  description = "tools for github API scripting";
+  description = "Tools for github API scripting";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    mach-nix.url = "github:DavHau/mach-nix";
   };
 
   outputs = { self, nixpkgs, flake-utils, mach-nix, ... }@inputs:
@@ -15,46 +14,42 @@
             inherit system;
           };
 
-          requirements-txt = "${self}/requirements.txt";
-          requirements-as-text = builtins.readFile requirements-txt;
+          mypython = pkgs.python312;
+          mypackages = pkgs.python312Packages;
 
-          python="python311";
+          requirements = (with mypackages; [
+            ghapi
+            requests
+          ]);
 
-          # python environment
-          mypython =
-            mach-nix.lib."${system}".mkPython {
-              inherit python;
-              requirements = requirements-as-text;
-            };
-
-          mydevpython =
-            mach-nix.lib."${system}".mkPython {
-              inherit python;
-              requirements = requirements-as-text +  ''
-pip
-python-lsp-server[all]
-mypy
-'';
-            };
-
-          # Utility to run a script easily in the flakes app
-          simple_script = name: add_deps: text: let
-            exec = pkgs.writeShellApplication {
-              inherit name text;
-              runtimeInputs = with pkgs; [
-                mypython
-              ] ++ add_deps;
-            };
-          in {
-            type = "app";
-            program = "${exec}/bin/${name}";
-          };
+          devrequirements =
+            requirements
+            ++
+            (with mypackages; [
+              pip
+              python-lsp-server
+              rich
+            ]);
 
           script-base-name = "github-tools";
-          script-name = "${script-base-name}.py";
-          pyscript = "${self}/${script-name}";
           package-version = "1.0";
           package-name = "${script-base-name}-${package-version}";
+
+          mypythonapp = (with mypackages; buildPythonApplication {
+            pname = "${script-base-name}";
+            version = "${package-version}";
+
+            dontUseSetuptoolsCheck = true;
+
+            pyproject = true;
+            build-system = [ setuptools ];
+
+            propagatedBuildInputs = requirements;
+
+            src = ./.;
+          });
+
+          mydevpython = mypython.withPackages (ps: devrequirements);
 
         in with pkgs;
           {
@@ -62,30 +57,17 @@ mypy
             #                       package                                   #
             ###################################################################
             packages = {
-              github-tools = stdenv.mkDerivation {
-                name="${package-name}";
-                src = ./.;
-
-                runtimeInputs = [ mypython ];
-                buildInputs = [ mypython ];
-                nativeBuildInputs = [ makeWrapper ];
-                installPhase = ''
-                  mkdir -p $out/bin/
-                  mkdir -p $out/share/
-                  cp ${pyscript} $out/share/${script-name}
-                  makeWrapper ${mypython}/bin/python $out/bin/${script-base-name} --add-flags "$out/share/${script-name}"
-                '';
-              };
+              github-tools = mypythonapp;
             };
 
             ###################################################################
             #                       running                                   #
             ###################################################################
-            apps = {
-              default = simple_script "pyscript" [] ''
-                python ${pyscript} "''$@"
-              '';
-            };
+            # apps = {
+            #   default = simple_script "pyscript" [] ''
+            #     python ${pyscript} "''$@"
+            #   '';
+            # };
 
             ###################################################################
             #                       development shell                         #
